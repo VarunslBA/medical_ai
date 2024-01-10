@@ -1,33 +1,32 @@
-# # instantiate the pipeline
-# from pyannote.audio import Pipeline
-# pipeline = Pipeline.from_pretrained(
-#   "pyannote/speaker-diarization-3.0",
-#   use_auth_token="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")
-#
-# # run the pipeline on an audio file
-# diarization = pipeline("Python_AI.mp3")
-# print(diarization)
-#
-# # dump the diarization output to disk using RTTM format
-# with open("audio.rttm", "w") as rttm:
-#     diarization.write_rttm(rttm)
 from pyannote.audio import Pipeline
-pipeline = Pipeline.from_pretrained(
-    "pyannote/speaker-diarization-3.1",
-    use_auth_token="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")
+import json
 
-# # send pipeline to GPU (when available)
-# import torch
-# pipeline.to(torch.device("cuda"))
+def diarize_audio(input_audio):
+    pipeline = Pipeline.from_pretrained(
+        "pyannote/speaker-diarization-3.1",
+        use_auth_token="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"
+    )
 
-# apply pretrained pipeline
-diarization = pipeline("Python_AI.mp3")
+    # apply pretrained pipeline
+    diarization = pipeline(input_audio)
 
-# print the result
-for turn, _, speaker in diarization.itertracks(yield_label=True):
-    print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
-# start=0.2s stop=1.5s speaker_0
-# start=1.8s stop=3.9s speaker_1
-# start=4.2s stop=5.7s speaker_0
-# ...
+    # Create a list to store tuples of time intervals, speaker, and transcript
+    results = []
 
+    # Store time intervals, speaker, and transcript
+    for turn, _, speaker in diarization.itertracks(yield_label=True):
+        start_time = round(turn.start, 1)
+        end_time = round(turn.end, 1)
+        speaker_id = f"speaker_{speaker}"
+        results.append({
+            'start_time': start_time,
+            'end_time': end_time,
+            'speaker_id': speaker_id
+        })
+
+    return results
+
+
+def save_results(results, output_file):
+    with open(output_file, 'w') as f:
+        json.dump(results, f)
